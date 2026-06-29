@@ -20,7 +20,10 @@ interface Ctx {
   logout: () => Promise<void>
   salvarProfile: (p: User) => Promise<void>
   gerarNovoPlano: () => Promise<void>
+  salvarPlano: (p: Plano) => Promise<void>
   adicionarSessao: (s: Sessao) => Promise<void>
+  removerSessao: (id: string) => Promise<void>
+  limparHistorico: () => Promise<void>
 }
 
 const AuthCtx = createContext<Ctx | null>(null)
@@ -99,9 +102,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const novo = await api.gerarPlano()
       setPlan(novo)
     },
+    salvarPlano: async (p) => {
+      await api.savePlan(p)
+      setPlan(p)
+    },
     adicionarSessao: async (s) => {
       await api.addSession(s)
       setSessions((prev) => [s, ...prev])
+    },
+    removerSessao: async (id) => {
+      await api.deleteSession(id)
+      setSessions((prev) => prev.filter((s) => s.id !== id))
+    },
+    limparHistorico: async () => {
+      await api.clearSessions()
+      setSessions([])
     },
   }
 

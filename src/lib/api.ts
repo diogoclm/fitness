@@ -67,6 +67,12 @@ export const savePlan = (p: Plano) =>
 export const getSessions = () => req<Sessao[]>('/api/sessions')
 export const addSession = (s: Sessao) =>
   req<{ ok: true }>('/api/sessions', { method: 'POST', body: JSON.stringify(s) })
+export const deleteSession = (id: string) =>
+  req<{ ok: true }>(`/api/sessions?id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
+export const clearSessions = () =>
+  req<{ ok: true }>('/api/sessions', { method: 'DELETE' })
 
 // Gera o plano via Claude (perfil é lido do servidor) e já persiste.
 export const gerarPlano = () => req<Plano>('/api/gerar-plano', { method: 'POST' })

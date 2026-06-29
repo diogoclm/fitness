@@ -55,7 +55,10 @@ function apiDev(): Plugin {
             res.end(JSON.stringify(o))
           }
 
-          const vercelReq = Object.assign(req, { body })
+          const query = Object.fromEntries(
+            new URL(url, 'http://localhost').searchParams,
+          )
+          const vercelReq = Object.assign(req, { body, query })
           await handler(vercelReq, vercelRes)
         } catch (e) {
           res.statusCode = 500

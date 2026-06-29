@@ -40,6 +40,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return
     }
 
+    if (req.method === 'DELETE') {
+      const id = (req.query?.id as string | undefined) ?? undefined
+      if (id) {
+        await sql`
+          delete from workout_sessions where user_id = ${userId} and id = ${id}`
+      } else {
+        // sem id => limpa todo o histórico do usuário
+        await sql`delete from workout_sessions where user_id = ${userId}`
+      }
+      res.status(200).json({ ok: true })
+      return
+    }
+
     res.status(405).json({ error: 'Método não permitido.' })
   } catch (e) {
     res.status(500).json({
