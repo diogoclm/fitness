@@ -5,9 +5,23 @@ import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
 // pelo try/catch do handler — quando uma query é executada.
 let _sql: NeonQueryFunction<false, false> | null = null
 
+// Procura a connection string. Integrações da Vercel às vezes prefixam o nome
+// (ex.: fitness_DATABASE_URL), então também varremos por qualquer *DATABASE_URL
+// / *POSTGRES_URL (ignorando as variantes _UNPOOLED).
+function acharUrl(): string | undefined {
+  const env = process.env
+  if (env.DATABASE_URL) return env.DATABASE_URL
+  if (env.POSTGRES_URL) return env.POSTGRES_URL
+  for (const [k, v] of Object.entries(env)) {
+    if (!v || /UNPOOLED/.test(k)) continue
+    if (/(^|_)DATABASE_URL$/.test(k) || /(^|_)POSTGRES_URL$/.test(k)) return v
+  }
+  return undefined
+}
+
 function getSql(): NeonQueryFunction<false, false> {
   if (_sql) return _sql
-  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL
+  const url = acharUrl()
   if (!url) {
     throw new Error(
       'DATABASE_URL não configurada. Defina nas variáveis de ambiente (Vercel) ou no .env (local).',
