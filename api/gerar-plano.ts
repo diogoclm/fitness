@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import type { User } from '../src/types'
-import { gerarPlanoCore } from './_core'
+import { gerarPlanoCore } from './_core.js'
 
 // A geração pela Claude pode levar mais que o timeout padrão (10s no plano
 // Hobby). 60s é o máximo permitido no Hobby.
