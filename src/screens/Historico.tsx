@@ -1,4 +1,4 @@
-import { getSessoes } from '../lib/storage'
+import { useAuth } from '../auth/AuthProvider'
 
 function formatarData(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', {
@@ -17,8 +17,8 @@ function formatarDuracao(seg: number): string {
 }
 
 export default function Historico() {
-  // Mais recentes primeiro.
-  const sessoes = [...getSessoes()].reverse()
+  // Já vem do servidor ordenado (mais recentes primeiro).
+  const { sessions: sessoes } = useAuth()
 
   return (
     <div className="px-5 py-8">

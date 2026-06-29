@@ -2,16 +2,17 @@ import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import RestTimer from '../components/RestTimer'
 import type { Sessao } from '../types'
-import { addSessao, getPlano } from '../lib/storage'
+import { useAuth } from '../auth/AuthProvider'
 
 export default function Treino() {
   const navigate = useNavigate()
   const { fichaId } = useParams<{ fichaId: string }>()
-  const plano = getPlano()
-  const ficha = plano?.fichas.find((f) => f.id === fichaId)
+  const { plan, adicionarSessao } = useAuth()
+  const ficha = plan?.fichas.find((f) => f.id === fichaId)
 
   const [idx, setIdx] = useState(0)
   const [mostrarTimer, setMostrarTimer] = useState(false)
+  const [finalizando, setFinalizando] = useState(false)
   const inicioRef = useRef(Date.now())
 
   // Cronômetro de duração da sessão (apenas para exibição).
@@ -29,7 +30,9 @@ export default function Treino() {
   const total = ficha.exercicios.length
   const ex = ficha.exercicios[idx]
 
-  function finalizar() {
+  async function finalizar() {
+    if (finalizando) return
+    setFinalizando(true)
     const sessao: Sessao = {
       id: crypto.randomUUID(),
       fichaId: ficha!.id,
@@ -37,7 +40,11 @@ export default function Treino() {
       data: new Date().toISOString(),
       duracaoSeg: Math.floor((Date.now() - inicioRef.current) / 1000),
     }
-    addSessao(sessao)
+    try {
+      await adicionarSessao(sessao)
+    } catch {
+      // mesmo se falhar o save, libera o usuário; histórico mostra o que persistiu
+    }
     navigate('/historico')
   }
 
@@ -115,9 +122,10 @@ export default function Treino() {
 
         <button
           onClick={finalizar}
-          className="min-h-14 w-full rounded-xl bg-accent text-lg font-extrabold text-bg active:scale-[0.99]"
+          disabled={finalizando}
+          className="min-h-14 w-full rounded-xl bg-accent text-lg font-extrabold text-bg disabled:opacity-60 active:scale-[0.99]"
         >
-          Finalizar Treino
+          {finalizando ? 'Salvando…' : 'Finalizar Treino'}
         </button>
       </div>
 

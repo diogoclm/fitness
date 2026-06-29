@@ -1,24 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { Ficha, Plano as PlanoType } from '../types'
-import { gerarPlano } from '../lib/claude'
-import { getPlano, getUser, setPlano } from '../lib/storage'
+import type { Ficha } from '../types'
+import { useAuth } from '../auth/AuthProvider'
 
 export default function Plano() {
   const navigate = useNavigate()
-  const [plano, setPlanoState] = useState<PlanoType | null>(() => getPlano())
+  const { plan, gerarNovoPlano } = useAuth()
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState('')
 
   async function gerar() {
-    const user = getUser()
-    if (!user) return
     setCarregando(true)
     setErro('')
     try {
-      const novo = await gerarPlano(user)
-      setPlano(novo)
-      setPlanoState(novo)
+      await gerarNovoPlano()
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro ao gerar o plano.')
     } finally {
@@ -28,7 +23,7 @@ export default function Plano() {
 
   // Gera automaticamente na primeira visita (sem plano salvo).
   useEffect(() => {
-    if (!plano && !carregando && !erro) void gerar()
+    if (!plan && !carregando && !erro) void gerar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -41,7 +36,7 @@ export default function Plano() {
     )
   }
 
-  if (erro && !plano) {
+  if (erro && !plan) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center">
         <p className="text-red-400">{erro}</p>
@@ -73,7 +68,7 @@ export default function Plano() {
       {erro && <p className="mb-4 text-sm text-red-400">{erro}</p>}
 
       <div className="space-y-5">
-        {plano?.fichas.map((ficha) => (
+        {plan?.fichas.map((ficha) => (
           <FichaCard
             key={ficha.id}
             ficha={ficha}

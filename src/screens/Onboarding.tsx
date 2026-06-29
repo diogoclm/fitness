@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Meta, Sexo, User } from '../types'
-import { clearPlano, setUser } from '../lib/storage'
+import { useAuth } from '../auth/AuthProvider'
 
 const METAS: Meta[] = [
   'Emagrecimento',
@@ -17,16 +17,18 @@ const inputCls =
 
 export default function Onboarding() {
   const navigate = useNavigate()
-  const [nome, setNome] = useState('')
-  const [idade, setIdade] = useState('')
-  const [peso, setPeso] = useState('')
-  const [altura, setAltura] = useState('')
-  const [sexo, setSexo] = useState<Sexo>('Masculino')
-  const [anamnese, setAnamnese] = useState('')
-  const [meta, setMeta] = useState<Meta>('Hipertrofia')
+  const { profile, salvarProfile } = useAuth()
+  const [nome, setNome] = useState(profile?.nome ?? '')
+  const [idade, setIdade] = useState(profile ? String(profile.idade) : '')
+  const [peso, setPeso] = useState(profile ? String(profile.peso) : '')
+  const [altura, setAltura] = useState(profile ? String(profile.altura) : '')
+  const [sexo, setSexo] = useState<Sexo>(profile?.sexo ?? 'Masculino')
+  const [anamnese, setAnamnese] = useState(profile?.anamnese ?? '')
+  const [meta, setMeta] = useState<Meta>(profile?.meta ?? 'Hipertrofia')
   const [erro, setErro] = useState('')
+  const [salvando, setSalvando] = useState(false)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!nome.trim() || !idade || !peso || !altura) {
       setErro('Preencha nome, idade, peso e altura.')
@@ -41,9 +43,15 @@ export default function Onboarding() {
       anamnese: anamnese.trim(),
       meta,
     }
-    setUser(user)
-    clearPlano() // novo usuário => plano antigo (se houver) é descartado
-    navigate('/plano')
+    setErro('')
+    setSalvando(true)
+    try {
+      await salvarProfile(user)
+      navigate('/plano')
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Erro ao salvar perfil.')
+      setSalvando(false)
+    }
   }
 
   return (
@@ -169,9 +177,10 @@ export default function Onboarding() {
 
         <button
           type="submit"
-          className="mt-2 min-h-14 w-full rounded-xl bg-accent text-lg font-bold text-bg active:scale-[0.99]"
+          disabled={salvando}
+          className="mt-2 min-h-14 w-full rounded-xl bg-accent text-lg font-bold text-bg disabled:opacity-60 active:scale-[0.99]"
         >
-          Gerar meu plano
+          {salvando ? 'Salvando…' : 'Salvar e continuar'}
         </button>
       </form>
     </div>

@@ -42,3 +42,8 @@ export interface Sessao {
   data: string // ISO date
   duracaoSeg: number
 }
+
+export interface AuthUser {
+  id: string
+  email: string
+}
