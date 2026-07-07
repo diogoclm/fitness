@@ -1,7 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Exercicio, Ficha, Plano as PlanoType } from '../types'
 import { useAuth } from '../auth/AuthProvider'
+
+// ---- datas / validade ----
+function fmtData(d: Date) {
+  return d.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+function calcPeriodo(plano: PlanoType) {
+  const inicio = new Date(plano.geradoEm)
+  const fim = new Date(inicio)
+  fim.setDate(fim.getDate() + plano.semanas * 7)
+  const venceu = Date.now() > fim.getTime()
+  const diasRestantes = Math.ceil((fim.getTime() - Date.now()) / 86400000)
+  return { inicio, fim, venceu, diasRestantes }
+}
 
 export default function Plano() {
   const navigate = useNavigate()
@@ -22,11 +39,16 @@ export default function Plano() {
     }
   }
 
-  // Gera automaticamente na primeira visita (sem plano salvo).
-  useEffect(() => {
-    if (!plan && !carregando && !erro) void gerar()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  function gerarNovo() {
+    if (
+      plan &&
+      !confirm(
+        'Gerar um novo plano? O plano atual será substituído (fica salvo em "Planos anteriores").',
+      )
+    )
+      return
+    void gerar()
+  }
 
   if (carregando) {
     return (
@@ -37,15 +59,23 @@ export default function Plano() {
     )
   }
 
-  if (erro && !plan) {
+  // ----- Sem plano: NÃO gera sozinho; usuário decide -----
+  if (!plan) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-red-400">{erro}</p>
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-5 px-6 text-center">
+        <div className="text-5xl">🏋️</div>
+        <div>
+          <h1 className="text-2xl font-extrabold">Você ainda não tem um plano</h1>
+          <p className="mt-1 text-sm text-muted">
+            Gere seu plano de treino personalizado com IA.
+          </p>
+        </div>
+        {erro && <p className="text-sm text-red-400">{erro}</p>}
         <button
           onClick={() => void gerar()}
-          className="min-h-12 rounded-xl bg-accent px-6 font-bold text-bg"
+          className="min-h-14 w-full max-w-xs rounded-xl bg-accent text-lg font-bold text-bg active:scale-[0.99]"
         >
-          Tentar novamente
+          Gerar meu plano
         </button>
       </div>
     )
@@ -67,35 +97,53 @@ export default function Plano() {
   }
 
   // ----- Modo visualização -----
+  const periodo = calcPeriodo(plan)
   return (
     <div className="px-5 py-8">
-      <header className="mb-6 flex items-end justify-between gap-2">
+      <header className="mb-4 flex items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-extrabold">Seu plano</h1>
-          <p className="text-sm text-muted">3 fichas geradas para você</p>
+          <p className="text-sm text-muted">Rotação A · B · C</p>
         </div>
-        <div className="flex shrink-0 gap-2">
-          {plan && (
-            <button
-              onClick={() => setRascunho(structuredClone(plan))}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-accent ring-1 ring-accent/40 active:scale-95"
-            >
-              Editar
-            </button>
-          )}
+        <div className="flex shrink-0 flex-col items-end gap-2">
           <button
-            onClick={() => void gerar()}
-            className="rounded-lg px-3 py-2 text-sm font-medium text-muted ring-1 ring-white/15 active:scale-95"
+            onClick={() => setRascunho(structuredClone(plan))}
+            className="rounded-lg px-3 py-1.5 text-sm font-medium text-accent ring-1 ring-accent/40 active:scale-95"
+          >
+            Editar
+          </button>
+          <button
+            onClick={gerarNovo}
+            className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted ring-1 ring-white/15 active:scale-95"
           >
             Gerar novo
           </button>
         </div>
       </header>
 
-      {erro && <p className="mb-4 text-sm text-red-400">{erro}</p>}
+      {/* Prazo / validade */}
+      <div
+        className={`mb-5 rounded-xl p-4 text-sm ring-1 ${
+          periodo.venceu
+            ? 'bg-red-500/10 text-red-300 ring-red-500/30'
+            : 'bg-card text-muted ring-white/10'
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <span>
+            📅 {fmtData(periodo.inicio)} → <b>{fmtData(periodo.fim)}</b>
+          </span>
+          <span className="text-xs">{plan.semanas} semanas</span>
+        </div>
+        <p className="mt-1 text-xs">
+          {periodo.venceu
+            ? 'Plano vencido — hora de renovar (Gerar novo).'
+            : `Faltam ${periodo.diasRestantes} dia(s) para renovar.`}
+        </p>
+      </div>
 
       <div className="space-y-5">
-        {plan?.fichas.map((ficha) => (
+        {plan.fichas.map((ficha) => (
           <FichaCard
             key={ficha.id}
             ficha={ficha}
@@ -103,6 +151,13 @@ export default function Plano() {
           />
         ))}
       </div>
+
+      <button
+        onClick={() => navigate('/planos')}
+        className="mt-6 min-h-11 w-full rounded-xl bg-card text-sm font-medium text-muted ring-1 ring-white/10 active:scale-[0.99]"
+      >
+        Ver planos anteriores
+      </button>
     </div>
   )
 }
@@ -201,7 +256,6 @@ function EditorPlano({
   }
 
   async function salvar() {
-    // valida: nenhum exercício sem nome
     const temVazio = rascunho.fichas.some((f) =>
       f.exercicios.some((ex) => !ex.nome.trim()),
     )
@@ -221,7 +275,23 @@ function EditorPlano({
 
   return (
     <div className="px-5 py-8 pb-28">
-      <h1 className="mb-6 text-2xl font-extrabold">Editar plano</h1>
+      <h1 className="mb-4 text-2xl font-extrabold">Editar plano</h1>
+
+      <label className="mb-5 block rounded-xl bg-card p-4">
+        <span className="mb-1 block text-sm text-muted">
+          Duração do plano (semanas)
+        </span>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={1}
+          className={inputCls}
+          value={rascunho.semanas}
+          onChange={(e) =>
+            setRascunho({ ...rascunho, semanas: Number(e.target.value) || 0 })
+          }
+        />
+      </label>
 
       <div className="space-y-5">
         {rascunho.fichas.map((ficha, fi) => (
@@ -316,7 +386,6 @@ function EditorPlano({
 
       {erro && <p className="mt-4 text-sm text-red-400">{erro}</p>}
 
-      {/* Barra fixa de ações */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-bg/95 p-4 backdrop-blur">
         <div className="mx-auto flex max-w-md gap-3">
           <button

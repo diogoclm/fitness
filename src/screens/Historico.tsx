@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '../auth/AuthProvider'
 
 function formatarData(iso: string): string {
@@ -21,6 +21,17 @@ export default function Historico() {
   // Já vem do servidor ordenado (mais recentes primeiro).
   const { sessions: sessoes, removerSessao, limparHistorico } = useAuth()
   const [ocupado, setOcupado] = useState(false)
+
+  // Resumo por ficha: quantos treinos e a última data (sessoes já vêm desc).
+  const resumo = useMemo(() => {
+    const map = new Map<string, { count: number; ultima: string }>()
+    for (const s of sessoes) {
+      const atual = map.get(s.fichaId)
+      if (!atual) map.set(s.fichaId, { count: 1, ultima: s.data })
+      else atual.count++
+    }
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
+  }, [sessoes])
 
   async function remover(id: string) {
     if (ocupado) return
@@ -58,6 +69,25 @@ export default function Historico() {
           </button>
         )}
       </header>
+
+      {resumo.length > 0 && (
+        <div className="mb-5 flex flex-wrap gap-2">
+          {resumo.map(([fichaId, r]) => (
+            <div
+              key={fichaId}
+              className="flex items-center gap-2 rounded-xl bg-card px-3 py-2 text-sm ring-1 ring-white/10"
+            >
+              <span className="flex size-6 items-center justify-center rounded-md bg-accent text-xs font-extrabold text-bg">
+                {fichaId}
+              </span>
+              <span className="font-medium">{r.count}×</span>
+              <span className="text-xs text-muted">
+                última {formatarData(r.ultima).split(',')[0]}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {sessoes.length === 0 ? (
         <div className="rounded-2xl bg-card p-8 text-center text-muted">

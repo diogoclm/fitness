@@ -13,7 +13,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (req.method === 'GET') {
       const rows = await sql`
-        select fichas, gerado_em from plans where user_id = ${userId}`
+        select fichas, gerado_em, semanas from plans where user_id = ${userId}`
       if (rows.length === 0) {
         res.status(200).json(null)
         return
@@ -21,6 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const plano: Plano = {
         fichas: rows[0].fichas,
         geradoEm: new Date(rows[0].gerado_em).toISOString(),
+        semanas: rows[0].semanas ?? 6,
       }
       res.status(200).json(plano)
       return
@@ -32,11 +33,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         res.status(400).json({ error: 'Plano inválido.' })
         return
       }
+      const semanas = Number(plano.semanas) > 0 ? Number(plano.semanas) : 6
       await sql`
-        insert into plans (user_id, fichas, gerado_em)
-        values (${userId}, ${JSON.stringify(plano.fichas)}::jsonb, ${plano.geradoEm})
+        insert into plans (user_id, fichas, gerado_em, semanas)
+        values (${userId}, ${JSON.stringify(plano.fichas)}::jsonb, ${plano.geradoEm}, ${semanas})
         on conflict (user_id) do update set
-          fichas = excluded.fichas, gerado_em = excluded.gerado_em`
+          fichas = excluded.fichas, gerado_em = excluded.gerado_em, semanas = excluded.semanas`
       res.status(200).json({ ok: true })
       return
     }

@@ -4,6 +4,7 @@ import { useAuth } from './auth/AuthProvider'
 import Login from './screens/Login'
 import Onboarding from './screens/Onboarding'
 import Plano from './screens/Plano'
+import PlanosAnteriores from './screens/PlanosAnteriores'
 import Treino from './screens/Treino'
 import Historico from './screens/Historico'
 import Perfil from './screens/Perfil'
@@ -67,6 +68,7 @@ export default function App() {
       <Route element={<RequireProfile />}>
         <Route element={<Layout />}>
           <Route path="/plano" element={<Plano />} />
+          <Route path="/planos" element={<PlanosAnteriores />} />
           <Route path="/historico" element={<Historico />} />
           <Route path="/perfil" element={<Perfil />} />
         </Route>

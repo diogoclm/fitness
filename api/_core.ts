@@ -65,6 +65,7 @@ function montarPrompt(user: User): string {
 export async function gerarPlanoCore(
   user: User,
   apiKey: string,
+  semanas = 6,
 ): Promise<Plano> {
   const client = new Anthropic({ apiKey })
 
@@ -86,5 +87,5 @@ export async function gerarPlanoCore(
     throw new Error('A Claude não retornou nenhuma ficha. Tente novamente.')
   }
 
-  return { fichas: dados.fichas, geradoEm: new Date().toISOString() }
+  return { fichas: dados.fichas, geradoEm: new Date().toISOString(), semanas }
 }

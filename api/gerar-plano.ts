@@ -39,14 +39,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const user = rows[0] as User
 
-    const plano = await gerarPlanoCore(user, apiKey)
+    // Mantém a duração do plano anterior (se houver); senão, 6 semanas.
+    const atual = await sql`
+      select fichas, gerado_em, semanas from plans where user_id = ${userId}`
+    const semanas = (atual[0]?.semanas as number | undefined) ?? 6
 
-    // Persiste o plano gerado para este usuário.
+    const plano = await gerarPlanoCore(user, apiKey, semanas)
+
+    // Arquiva o plano atual (histórico) antes de substituir.
+    if (atual.length > 0) {
+      await sql`
+        insert into plans_history (user_id, fichas, gerado_em, semanas)
+        values (${userId}, ${JSON.stringify(atual[0].fichas)}::jsonb, ${atual[0].gerado_em}, ${atual[0].semanas})`
+    }
+
+    // Persiste o novo plano.
     await sql`
-      insert into plans (user_id, fichas, gerado_em)
-      values (${userId}, ${JSON.stringify(plano.fichas)}::jsonb, ${plano.geradoEm})
+      insert into plans (user_id, fichas, gerado_em, semanas)
+      values (${userId}, ${JSON.stringify(plano.fichas)}::jsonb, ${plano.geradoEm}, ${plano.semanas})
       on conflict (user_id) do update set
-        fichas = excluded.fichas, gerado_em = excluded.gerado_em`
+        fichas = excluded.fichas, gerado_em = excluded.gerado_em, semanas = excluded.semanas`
 
     res.status(200).json(plano)
   } catch (e) {

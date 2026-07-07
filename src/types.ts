@@ -33,6 +33,13 @@ export interface Ficha {
 export interface Plano {
   fichas: Ficha[]
   geradoEm: string // ISO date
+  semanas: number // duração sugerida do plano (rotação ABC) → define a validade
+}
+
+// Plano arquivado (histórico de planos anteriores).
+export interface PlanoArquivado extends Plano {
+  id: string
+  arquivadoEm: string // ISO date
 }
 
 export interface Sessao {

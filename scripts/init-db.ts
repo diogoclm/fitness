@@ -28,6 +28,19 @@ const statements = [
      fichas jsonb not null,
      gerado_em timestamptz not null
    )`,
+  // Duração sugerida do plano (rotação ABC) em semanas — define o prazo/validade.
+  `alter table plans add column if not exists semanas int not null default 6`,
+  // Planos anteriores arquivados (histórico de planos).
+  `create table if not exists plans_history (
+     id uuid primary key default gen_random_uuid(),
+     user_id uuid references users(id) on delete cascade,
+     fichas jsonb not null,
+     gerado_em timestamptz not null,
+     semanas int not null default 6,
+     arquivado_em timestamptz not null default now()
+   )`,
+  `create index if not exists plans_history_user_idx
+     on plans_history (user_id, arquivado_em desc)`,
   `create table if not exists workout_sessions (
      id uuid primary key default gen_random_uuid(),
      user_id uuid references users(id) on delete cascade,

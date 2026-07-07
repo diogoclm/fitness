@@ -1,4 +1,4 @@
-import type { AuthUser, Plano, Sessao, User } from '../types'
+import type { AuthUser, Plano, PlanoArquivado, Sessao, User } from '../types'
 
 // Disparado quando uma chamada retorna 401 — o AuthProvider escuta e desloga.
 export const onNaoAutenticado = new EventTarget()
@@ -63,6 +63,8 @@ export const saveProfile = (p: User) =>
 export const getPlan = () => req<Plano | null>('/api/plan')
 export const savePlan = (p: Plano) =>
   req<{ ok: true }>('/api/plan', { method: 'PUT', body: JSON.stringify(p) })
+export const getPlanHistory = () =>
+  req<PlanoArquivado[]>('/api/plan-history')
 
 export const getSessions = () => req<Sessao[]>('/api/sessions')
 export const addSession = (s: Sessao) =>
