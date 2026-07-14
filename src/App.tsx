@@ -4,6 +4,7 @@ import { useAuth } from './auth/AuthProvider'
 import Login from './screens/Login'
 import Onboarding from './screens/Onboarding'
 import Plano from './screens/Plano'
+import EditarPlano from './screens/EditarPlano'
 import PlanosAnteriores from './screens/PlanosAnteriores'
 import Treino from './screens/Treino'
 import Historico from './screens/Historico'
@@ -72,6 +73,8 @@ export default function App() {
           <Route path="/historico" element={<Historico />} />
           <Route path="/perfil" element={<Perfil />} />
         </Route>
+        {/* Fora do Layout: telas sem bottom nav (barra de ações própria) */}
+        <Route path="/plano/editar" element={<EditarPlano />} />
         <Route path="/treino/:fichaId" element={<Treino />} />
       </Route>
 
