@@ -76,10 +76,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const entrar = useCallback(
     async (fn: () => Promise<AuthUser>) => {
       const u = await fn()
+      // Mantém `loading` durante a carga: sem isso haveria um render com
+      // usuário definido mas profile/plan ainda nulos, e o App decidiria a
+      // rota (onboarding / "sem plano") com dados incompletos.
+      setLoading(true)
       setUser(u)
-      await carregarDados()
+      try {
+        await carregarDados()
+      } catch (e) {
+        limpar()
+        throw e
+      } finally {
+        setLoading(false)
+      }
     },
-    [carregarDados],
+    [carregarDados, limpar],
   )
 
   const value: Ctx = {
